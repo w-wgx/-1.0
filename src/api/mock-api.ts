@@ -25,6 +25,8 @@ interface RawMockEquipment {
   local_image?: string
   source_url?: string
   crawl_time?: string
+  subtype?: string      // 新增：细分子类型（如战斗机、驱逐舰等）
+  subtype_id?: string   // 新增：子类型ID
 }
 
 // 转换后的数据类型（前端期望的字段名）
@@ -34,6 +36,7 @@ interface TransformedEquipment {
   subtitle?: string
   type: string
   category: string
+  subtype?: string       // 细分子类型（如战斗机、驱逐舰等）
   country: string
   year: number | null
   width: number | null
@@ -81,9 +84,11 @@ function transformItem(item: RawMockEquipment): TransformedEquipment {
     id: item.platform_id || item.id || 0,
     name: item.name?.replace(/\n/g, ' ').trim() || '',
     subtitle: extractSubtitle(item.name),
-    // 修复：优先使用 category（有正确值如 aircraft/ship），type_class 在CSV中解析错误
-    type: (item.category || item.type || 'Unknown').trim(),
+    // 使用细分子类型（subtype），如果没有则回退到 category
+    type: (item.subtype || item.category || 'Unknown').trim(),
     category: (item.category || '').trim(),
+    // 保存子类型信息用于详细分类
+    subtype: item.subtype || null,
     // 修复：标准化国家名称（移除年份后缀如 "Russia [1992-]" -> "Russia"）
     country: normalizeCountryName(item.country || ''),
     year: item.commissioned_year ?? item.year ?? null,
