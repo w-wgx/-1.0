@@ -81,12 +81,13 @@ let transformedData: TransformedEquipment[] = []
  */
 function transformItem(item: RawMockEquipment): TransformedEquipment {
   return {
-    id: item.platform_id || item.id || 0,
+    // 新格式：id 可能是 "p_xxx", "w_xxx" 等字符串，提取数字部分
+    id: typeof item.id === 'string' ? parseInt(item.id.replace(/\D/g, '')) || 0 : (item.platform_id || item.id || 0),
     name: item.name?.replace(/\n/g, ' ').trim() || '',
     subtitle: extractSubtitle(item.name),
-    // 使用细分子类型（subtype），如果没有则回退到 category
-    type: (item.subtype || item.category || 'Unknown').trim(),
-    category: (item.category || '').trim(),
+    // 直接使用 type 字段（已经是 8 种类型之一）
+    type: (item.type || item.subtype || item.category || 'Unknown').trim(),
+    category: (item.type || item.category || '').trim(),
     // 保存子类型信息用于详细分类
     subtype: item.subtype || null,
     // 修复：标准化国家名称（移除年份后缀如 "Russia [1992-]" -> "Russia"）
