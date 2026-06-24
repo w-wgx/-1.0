@@ -1,0 +1,359 @@
+/**
+ * 赛博HUD军事终端全局样式
+ * 深色主题 + 科技蓝配色
+ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+  background: #0a0e17;
+  color: #e0e0e0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 212, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  
+  &:hover {
+    background: rgba(0, 212, 255, 0.5);
+  }
+}
+
+::selection {
+  background: rgba(0, 212, 255, 0.3);
+  color: #00d4ff;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 212, 255, 0.5),
+                0 0 10px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.8),
+                0 0 20px rgba(0, 212, 255, 0.5);
+  }
+}
+
+@keyframes textGlow {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.8),
+                 0 0 20px rgba(0, 212, 255, 0.5);
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    border-color: rgba(0, 212, 255, 0.8);
+  }
+}
+
+.cyber-panel {
+  background: rgba(10, 14, 23, 0.95);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  box-shadow: 
+    0 0 20px rgba(0, 212, 255, 0.1),
+    inset 0 0 20px rgba(0, 212, 255, 0.05);
+}
+
+.cyber-text {
+  color: #00d4ff;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.cyber-number {
+  color: #00ff88;
+  font-weight: bold;
+  animation: textGlow 2s ease-in-out infinite;
+}
+
+.el-message {
+  background: rgba(10, 14, 23, 0.95) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2) !important;
+  
+  .el-message__content {
+    color: #e0e0e0 !important;
+    font-family: 'Courier New', monospace !important;
+  }
+  
+  &.el-message--success {
+    border-color: rgba(0, 255, 136, 0.5) !important;
+    
+    .el-message__icon {
+      color: #00ff88 !important;
+    }
+  }
+  
+  &.el-message--error {
+    border-color: rgba(255, 68, 68, 0.5) !important;
+    
+    .el-message__icon {
+      color: #ff4444 !important;
+    }
+  }
+  
+  &.el-message--warning {
+    border-color: rgba(255, 170, 0, 0.5) !important;
+    
+    .el-message__icon {
+      color: #ffaa00 !important;
+    }
+  }
+}
+
+.el-message-box {
+  background: rgba(10, 14, 23, 0.95) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.3) !important;
+  
+  .el-message-box__title {
+    color: #00d4ff !important;
+    font-family: 'Courier New', monospace !important;
+  }
+  
+  .el-message-box__content {
+    color: #e0e0e0 !important;
+    font-family: 'Courier New', monospace !important;
+  }
+  
+  .el-message-box__headerbtn {
+    .el-message-box__close {
+      color: rgba(0, 212, 255, 0.6) !important;
+      
+      &:hover {
+        color: #00d4ff !important;
+      }
+    }
+  }
+  
+  .el-button--primary {
+    background: rgba(0, 212, 255, 0.2) !important;
+    border-color: #00d4ff !important;
+    color: #00d4ff !important;
+    
+    &:hover {
+      background: rgba(0, 212, 255, 0.3) !important;
+    }
+  }
+  
+  .el-button--default {
+    background: rgba(0, 212, 255, 0.05) !important;
+    border-color: rgba(0, 212, 255, 0.3) !important;
+    color: #00d4ff !important;
+    
+    &:hover {
+      background: rgba(0, 212, 255, 0.1) !important;
+      border-color: rgba(0, 212, 255, 0.5) !important;
+    }
+  }
+}
+
+// ============== 赛博HUD装备详情弹窗（全局最高优先级） ==============
+.el-overlay {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+// 强制移除所有 Element Plus Dialog 白色边框和背景
+.el-dialog {
+  // 彻底移除默认边框
+  border: none !important;
+  outline: none !important;
+
+  // 使用 box-shadow 创建青蓝色边框（优先级高于 border）
+  box-shadow:
+    0 0 0 1.5px rgba(0, 212, 255, 0.6),
+    0 8px 32px rgba(0, 0, 0, 0.9),
+    0 0 30px rgba(0, 212, 255, 0.25) !important;
+
+  background-color: rgb(10, 14, 23) !important;
+}
+
+.detail-dialog {
+  .el-dialog {
+    background: rgb(10, 14, 23) !important;
+    backdrop-filter: blur(18px) saturate(120%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(120%) !important;
+
+    // 移除所有边框，使用阴影创建发光边框
+    border: none !important;
+    outline: none !important;
+    box-shadow:
+      0 0 0 2px rgba(0, 212, 255, 0.7),      // 青蓝色主边框
+      0 0 20px rgba(0, 212, 255, 0.3),         // 外发光
+      0 10px 40px rgba(0, 0, 0, 0.9) !important; // 深色投影
+
+    border-radius: 6px !important;
+    overflow: hidden;
+    animation: dialog-appear 0.3s ease-out;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 212, 255, 0.03) 2px,
+        rgba(0, 212, 255, 0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+  }
+
+  // 顶部标题栏
+  .el-dialog__header {
+    position: relative;
+    background: rgb(0, 15, 30) !important;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.35);
+    padding: 15px 20px;
+    margin-right: 0;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #00d4ff, #00ff88, #00d4ff);
+      opacity: 1;
+    }
+
+    .el-dialog__title {
+      color: #00ff88 !important;
+      font-family: 'Roboto Mono', 'JetBrains Mono', 'Courier New', monospace !important;
+      font-weight: 700 !important;
+      font-size: 18px !important;
+      letter-spacing: 1px;
+      text-shadow: 1px 1px 2px rgba(0, 255, 136, 0.3);
+    }
+
+    .el-dialog__headerbtn {
+      .el-dialog__close {
+        color: #80d0ff !important;
+        font-size: 20px;
+
+        &:hover {
+          color: #00d4ff !important;
+          text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+        }
+      }
+    }
+  }
+
+  // 内容区域 - 深色背景（修复加载时白色闪烁）
+  .el-dialog__body {
+    position: relative;
+    padding: 20px;
+    background-color: rgb(10, 14, 23) !important;
+    color: #ffffff;
+  }
+
+  // 底部区域
+  .el-dialog__footer {
+    position: relative;
+    background: rgb(0, 15, 30) !important;
+    border-top: 1px solid rgba(0, 212, 255, 0.25);
+    padding: 15px 20px;
+  }
+}
+
+@keyframes dialog-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// ============== 修复数据加载时的白色背景闪烁 ==============
+// Element Plus Loading / Spinner 背景色
+.el-loading-mask {
+  background-color: rgba(10, 14, 23, 0.85) !important;
+}
+
+.el-loading-spinner {
+  .circular {
+    .path {
+      stroke: #00d4ff !important;
+    }
+  }
+
+  .el-loading-text {
+    color: #00d4ff !important;
+  }
+}
+
+// 表格 loading 状态
+.el-table {
+  .el-table__empty-block,
+  .el-table__body-wrapper {
+    background-color: transparent !important;
+  }
+
+  // 空状态或加载状态
+  .el-table__placeholder,
+  .el-table__expanded-cell {
+    background-color: transparent !important;
+  }
+}
+
+// 容器 loading 遮罩
+.el-skeleton,
+.el-skeleton__item {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 25, 50, 0.5) 25%,
+    rgba(0, 40, 80, 0.7) 50%,
+    rgba(0, 25, 50, 0.5) 75%
+  ) !important;
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.overlay {
+  background: rgba(10, 14, 23, 0.8) !important;
+}
+
+.loader {
+  border-color: rgba(0, 212, 255, 0.2) !important;
+  border-top-color: #00d4ff !important;
+}

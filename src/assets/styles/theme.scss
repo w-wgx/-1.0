@@ -1,0 +1,115 @@
+/**
+ * 赛博HUD军事终端主题变量
+ * 集中管理：颜色、动画、阴影、字体
+ */
+
+// ============== 颜色变量 ==============
+$primary: #00e5ff;
+$primary-dark: #0097a7;
+$accent: #ff6d00;
+$danger: #ff1744;
+$success: #76ff03;
+$warning: #ffd600;
+$purple: #e040fb;
+
+$bg-deep: #000000;
+$bg-dark: #0a0e17;
+$bg-panel: rgba(10, 14, 23, 0.92);
+$bg-card: rgba(13, 27, 42, 0.85);
+$bg-hover: rgba(0, 229, 255, 0.08);
+
+$text-primary: #e0f7fa;
+$text-secondary: #80deea;
+$text-muted: #607d8b;
+
+$border: rgba(26, 35, 126, 0.5);
+$border-glow: rgba(0, 229, 255, 0.3);
+
+// ============== 阴影 ==============
+$shadow-glow: 0 0 16px rgba(0, 229, 255, 0.4);
+$shadow-card: 0 8px 32px rgba(0, 0, 0, 0.6);
+$shadow-glow-soft: 0 0 8px rgba(0, 229, 255, 0.3);
+
+// ============== 动画 ==============
+@keyframes scan-x {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 229, 255, 0.5),
+                0 0 10px rgba(0, 229, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.8),
+                0 0 20px rgba(0, 229, 255, 0.5);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ============== Mixins ==============
+@mixin hud-card {
+  background: $bg-panel;
+  backdrop-filter: blur(12px);
+  border: 1px solid $border-glow;
+  border-radius: 6px;
+  box-shadow: $shadow-card, $shadow-glow-soft;
+}
+
+@mixin neon-border {
+  border: 1px solid $border;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: $primary;
+    box-shadow: $shadow-glow;
+  }
+}
+
+@mixin scanline($color: $primary) {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, $color, transparent);
+    opacity: 0.4;
+    animation: scan-x 4s linear infinite;
+    pointer-events: none;
+  }
+}
+
+@mixin text-glow($color: $primary) {
+  text-shadow: 0 0 6px rgba($color, 0.4);
+}
+
+// ============== 通用 HUD 类 ==============
+.hud-text {
+  color: $text-primary;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+
+.hud-text-glow {
+  color: $primary;
+  @include text-glow($primary);
+}
+
+.hud-text-accent {
+  color: $accent;
+  @include text-glow($accent);
+}
