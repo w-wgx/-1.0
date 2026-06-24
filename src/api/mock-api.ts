@@ -1,26 +1,63 @@
 /**
  * Mock API 服务
  * 用于生产环境（Vercel部署）时，使用静态JSON数据替代后端API
+ *
+ * 修复：字段名映射到前端期望的格式
  */
 
-// Mock 数据类型
-interface MockEquipment {
+// Mock 原始数据类型（JSON 中的字段）
+interface RawMockEquipment {
   platform_id?: number
   id?: number
   name: string
   type?: string
+  type_class?: string
   category?: string
   country?: string
-  commissioned_year?: number
-  year?: number
-  width?: number
-  length?: number
-  max_range?: number
-  crew?: number
+  commissioned_year?: number | null
+  year?: number | null
+  width?: number | null
+  length?: number | null
+  max_range?: number | null
+  crew?: number | null
   has_image?: boolean
   image_url?: string
   local_image?: string
   source_url?: string
+  crawl_time?: string
+}
+
+// 转换后的数据类型（前端期望的字段名）
+interface TransformedEquipment {
+  id: number
+  name: string
+  subtitle?: string
+  type: string
+  category: string
+  country: string
+  year: number | null
+  width: number | null
+  length: number | null
+  height?: number | null
+  weight?: number | null
+  max_range?: number | null
+  maxSpeed?: number | null
+  crew: number | null
+  maxRange?: number | null
+  detectionRange?: number | null
+  ceiling?: number | null
+  engine?: string
+  manufacturer?: string
+  totalProduction?: number
+  description?: string
+  has_image: boolean
+  imageLink?: string      // 完整外链 URL (image_url)
+  imagePath?: string      // 本地路径 (local_image)
+  sourceLink?: string     // 来源链接 (source_url)
+  detailUrl?: string      // 详情链接
+  source?: string         // 数据来源
+  operators?: string      // 使用方
+  variants?: string       // 变体型号
 }
 
 // Mock 响应格式
@@ -32,19 +69,97 @@ interface MockResponse {
 }
 
 // Mock 数据（从 public 目录加载）
-let mockData: MockEquipment[] = []
+let mockData: RawMockEquipment[] = []
+let transformedData: TransformedEquipment[] = []
 
 /**
- * 加载 Mock 数据
+ * 数据字段转换函数
+ * 将 JSON 原始字段映射为前端期望的字段名
+ */
+function transformItem(item: RawMockEquipment): TransformedEquipment {
+  return {
+    id: item.platform_id || item.id || 0,
+    name: item.name?.replace(/\n/g, ' ').trim() || '',
+    subtitle: extractSubtitle(item.name),
+    // 修复：优先使用 category（有正确值如 aircraft/ship），type_class 在CSV中解析错误
+    type: (item.category || item.type || 'Unknown').trim(),
+    category: (item.category || '').trim(),
+    // 修复：标准化国家名称（移除年份后缀如 "Russia [1992-]" -> "Russia"）
+    country: normalizeCountryName(item.country || ''),
+    year: item.commissioned_year ?? item.year ?? null,
+    width: item.width ?? null,
+    length: item.length ?? null,
+    height: null,
+    weight: null,
+    max_range: item.max_range ?? null,
+    maxSpeed: null,
+    crew: item.crew ?? null,
+    maxRange: item.max_range ?? null,
+    detectionRange: null,
+    ceiling: null,
+    engine: null,
+    manufacturer: null,
+    totalProduction: null,
+    description: null,
+    has_image: !!item.has_image,
+    // 图片字段映射
+    imageLink: item.image_url || null,        // image_url -> imageLink
+    imagePath: item.local_image || null,       // local_image -> imagePath
+    sourceLink: item.source_url || null,       // source_url -> sourceLink
+    detailUrl: item.source_url || null,        // source_url -> detailUrl
+    source: item.source_url || null,           // source_url -> source
+    operators: null,
+    variants: null
+  }
+}
+
+/**
+ * 从名称中提取副标题
+ */
+function extractSubtitle(name: string): string | undefined {
+  if (!name) return undefined
+  const match = name.match(/\[(.*?)\]/)
+  if (match) {
+    return match[1]
+  }
+  if (name.includes(' - ')) {
+    return name.split(' - ').slice(1).join(' - ').trim()
+  }
+  return undefined
+}
+
+/**
+ * 标准化国家名称
+ * 移除年份后缀和特殊字符，统一格式
+ * 例如: "Russia [1992-]" -> "Russia", "Soviet Union [-1991]" -> "Soviet Union"
+ */
+function normalizeCountryName(country: string): string {
+  if (!country) return ''
+  
+  // 移除方括号中的年份信息，如 "Russia [1992-]" -> "Russia "
+  let normalized = country.replace(/\s*\[.*?\]\s*/g, ' ').trim()
+  
+  // 移除多余空格
+  normalized = normalized.replace(/\s+/g, ' ').trim()
+  
+  return normalized
+}
+
+/**
+ * 加载并转换 Mock 数据
  */
 export async function loadMockData(): Promise<void> {
   try {
     const response = await fetch('/mock-data/all-equipment.json')
-    mockData = await response.json()
-    console.log(`Mock data loaded: ${mockData.length} records`)
+    const rawData: RawMockEquipment[] = await response.json()
+    mockData = rawData
+    // 转换所有数据
+    transformedData = rawData.map(transformItem)
+    console.log(`Mock data loaded: ${transformedData.length} records`)
   } catch (error) {
     console.error('Failed to load mock data:', error)
     mockData = []
+    transformedData = []
   }
 }
 
@@ -58,7 +173,7 @@ export function mockGetList(params: {
   type?: string
   country?: string
 }): MockResponse {
-  let filtered = [...mockData]
+  let filtered = [...transformedData]
 
   // 筛选条件
   if (params.name) {
@@ -105,8 +220,8 @@ export function mockGetAll(): MockResponse {
   return {
     code: 200,
     message: 'success',
-    data: mockData,
-    total: mockData.length
+    data: transformedData,
+    total: transformedData.length
   }
 }
 
@@ -114,7 +229,7 @@ export function mockGetAll(): MockResponse {
  * 模拟获取国家列表
  */
 export function mockGetDistinctCountries(): MockResponse {
-  const countries = [...new Set(mockData.map(item => item.country).filter(Boolean))]
+  const countries = [...new Set(transformedData.map(item => item.country).filter(Boolean))]
   return {
     code: 200,
     message: 'success',
@@ -128,7 +243,7 @@ export function mockGetDistinctCountries(): MockResponse {
  */
 export function mockGetCountriesSummary(): MockResponse {
   const countryCounts: Record<string, number> = {}
-  mockData.forEach(item => {
+  transformedData.forEach(item => {
     if (item.country) {
       countryCounts[item.country] = (countryCounts[item.country] || 0) + 1
     }
@@ -150,13 +265,13 @@ export function mockGetCountriesSummary(): MockResponse {
  * 模拟获取轻量数据
  */
 export function mockGetLightweight(): MockResponse {
-  const lightweight = mockData.map(item => ({
-    id: item.platform_id || item.id,
+  const lightweight = transformedData.map(item => ({
+    id: item.id,
     name: item.name,
-    type: item.type || item.category,
+    type: item.type,
     category: item.category,
     country: item.country,
-    year: item.commissioned_year || item.year,
+    year: item.year,
     has_image: item.has_image
   }))
 
@@ -170,32 +285,50 @@ export function mockGetLightweight(): MockResponse {
 
 /**
  * 模拟获取国家统计
+ * 修复：返回正确的字段名 topEquipment, byType, byYear
  */
 export function mockGetCountryStats(country: string): MockResponse {
-  const countryData = mockData.filter(item => item.country === country)
+  const countryData = transformedData.filter(item => item.country === country)
 
-  // 类型统计
-  const typeCounts: Record<string, number> = {}
+  // 类型统计 -> byType
+  const byType: Record<string, number> = {}
   countryData.forEach(item => {
-    const type = item.type || item.category || 'Unknown'
-    typeCounts[type] = (typeCounts[type] || 0) + 1
+    const type = item.type || 'Other'
+    byType[type] = (byType[type] || 0) + 1
   })
 
-  // 年份统计
-  const yearCounts: Record<string, number> = {}
+  // 年份统计 -> byYear
+  const byYear: Record<string, number> = {}
   countryData.forEach(item => {
-    const year = item.commissioned_year || item.year
-    if (year) {
-      const decade = Math.floor(year / 10) * 10
-      yearCounts[`${decade}s`] = (yearCounts[`${decade}s`] || 0) + 1
+    if (item.year) {
+      const decade = Math.floor(Number(item.year) / 10) * 10
+      byYear[`${decade}s`] = (byYear[`${decade}s`] || 0) + 1
     }
   })
 
-  // 最新装备列表
-  const latestEquipment = countryData
-    .filter(item => item.commissioned_year || item.year)
-    .sort((a, b) => (b.commissioned_year || b.year || 0) - (a.commissioned_year || a.year || 0))
-    .slice(0, 10)
+  // 最新装备列表 -> topEquipment（取前20条，包含完整信息）
+  const topEquipment = countryData
+    .filter(item => item.year)
+    .sort((a, b) => (Number(b.year) || 0) - (Number(a.year) || 0))
+    .slice(0, 20)
+    .map(item => ({
+      id: item.id,
+      name: item.name,
+      subtitle: item.subtitle,
+      type: item.type,
+      category: item.category,
+      country: item.country,
+      year: item.year,
+      manufacturer: item.manufacturer,
+      height: item.height,
+      engine: item.engine,
+      source: item.sourceLink,
+      has_image: item.has_image,
+      imageLink: item.imageLink,
+      imagePath: item.imagePath
+    }))
+
+  console.log('[MockAPI] getCountryStats:', country, 'total:', countryData.length, 'topEquipment:', topEquipment.length)
 
   return {
     code: 200,
@@ -203,13 +336,13 @@ export function mockGetCountryStats(country: string): MockResponse {
     data: {
       country,
       total: countryData.length,
-      typeStats: Object.entries(typeCounts)
+      byType: Object.entries(byType)
         .map(([type, count]) => ({ type, count }))
         .sort((a, b) => b.count - a.count),
-      yearStats: Object.entries(yearCounts)
-        .map(([year, count]) => ({ year, count }))
-        .sort((a, b) => a.year.localeCompare(b.year)),
-      latestEquipment
+      byYear: Object.entries(byYear)
+        .map(([decade, count]) => ({ decade, count }))
+        .sort((a, b) => a.decade.localeCompare(b.decade)),
+      topEquipment  // 修复：使用正确的字段名
     }
   }
 }
@@ -221,8 +354,8 @@ export function mockGetStats(): MockResponse {
   const typeCounts: Record<string, number> = {}
   const countryCounts: Record<string, number> = {}
 
-  mockData.forEach(item => {
-    const type = item.type || item.category || 'Unknown'
+  transformedData.forEach(item => {
+    const type = item.type || 'Unknown'
     typeCounts[type] = (typeCounts[type] || 0) + 1
 
     if (item.country) {
@@ -234,7 +367,7 @@ export function mockGetStats(): MockResponse {
     code: 200,
     message: 'success',
     data: {
-      total: mockData.length,
+      total: transformedData.length,
       typeStats: Object.entries(typeCounts)
         .map(([type, count]) => ({ type, count }))
         .sort((a, b) => b.count - a.count),
@@ -242,25 +375,29 @@ export function mockGetStats(): MockResponse {
         .map(([country, count]) => ({ country, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 20),
-      hasImage: mockData.filter(item => item.has_image).length,
-      noImage: mockData.filter(item => !item.has_image).length
+      hasImage: transformedData.filter(item => item.has_image).length,
+      noImage: transformedData.filter(item => !item.has_image).length
     }
   }
 }
 
 /**
  * 模拟获取详情
+ * 返回转换后的完整数据
  */
 export function mockGetDetail(id: number | string): MockResponse {
-  const item = mockData.find(d => d.platform_id == id || d.id == id)
+  const item = transformedData.find(d => d.id == id)
 
   if (!item) {
+    console.warn('[MockAPI] getDetail not found:', id)
     return {
       code: 404,
       message: 'Equipment not found',
       data: null
     }
   }
+
+  console.log('[MockAPI] getDetail found:', item.name)
 
   return {
     code: 200,
