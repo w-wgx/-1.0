@@ -372,6 +372,7 @@
                     placement="right"
                     :show-after="0"
                     effect="dark"
+                    popper-class="equipment-image-tooltip"
                   >
                     <template #content>
                       <div class="image-preview">
@@ -1398,18 +1399,18 @@ watch(tableData, (newData) => {
   border: 1px solid rgba(0, 212, 255, 0.5) !important;
   box-shadow: 0 0 20px rgba(0, 212, 255, 0.3) !important;
   background: rgba(10, 14, 23, 0.95);
-  padding: 4px;
-  border-radius: 4px;
-  display: inline-block !important;
-  line-height: 0 !important;
-  
+  padding: 8px;
+  border-radius: 6px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
   img {
     display: block !important;
-    max-width: 260px !important;
-    max-height: 180px !important;
-    width: auto !important;
-    height: auto !important;
-    object-fit: contain;
+    width: 280px !important;      // 固定宽度
+    height: 200px !important;     // 固定高度
+    object-fit: contain;          // 保持比例，居中显示
+    border-radius: 4px;
   }
 }
 
@@ -2505,5 +2506,36 @@ watch(tableData, (newData) => {
   word-wrap: break-word;
   font-size: 13px;
   line-height: 1.4;
+}
+</style>
+
+<!-- 全局样式：图片预览统一尺寸 -->
+<style>
+/* 装备图片 tooltip 统一尺寸 */
+.equipment-image-tooltip {
+  border: 1px solid rgba(0, 212, 255, 0.6) !important;
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.4), 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  background: rgba(10, 14, 23, 0.98) !important;
+  padding: 10px !important;
+  border-radius: 8px !important;
+  max-width: 320px !important; /* 固定容器宽度 */
+}
+
+.equipment-image-tooltip .image-preview {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 300px !important;      /* 固定宽度 */
+  height: 220px !important;     /* 固定高度 */
+  background: #000 !important;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.equipment-image-tooltip .image-preview img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;   /* 保持比例，居中显示 */
+  display: block !important;
 }
 </style>
