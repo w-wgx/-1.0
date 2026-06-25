@@ -850,15 +850,10 @@ const generateMockEquipments = (year: string, count: number) => {
 // ========== 加载数据 ==========
 const loadStats = async () => {
   try {
-    // 并行加载聚合统计和轻量全量数据，避免两次渲染导致闪烁
-    const [statsRes, lightweightRes] = await Promise.allSettled([
-      equipmentApi.getStats(),
-      equipmentApi.getLightweight()
-    ])
-
-    // 处理聚合统计数据
-    if (statsRes.status === 'fulfilled' && statsRes.value.code === 200) {
-      const data = statsRes.value.data
+    const statsRes = await equipmentApi.getStats()
+    
+    if (statsRes.code === 200) {
+      const data = statsRes.data
       rawData.byType = data.byType || []
       rawData.byCountry = data.byCountry || []
       rawData.byYear = data.byYear || []
@@ -869,28 +864,53 @@ const loadStats = async () => {
       stats.countries = data.countryCount || 0
       stats.avgYear = data.avgYear || 0
 
-      // 初始化动画数字
       animateNumber('total', stats.total)
       animateNumber('types', stats.types)
       animateNumber('countries', stats.countries)
       animateNumber('avgYear', stats.avgYear)
     }
 
-    // 处理轻量全量数据（用于筛选功能）
-    if (lightweightRes.status === 'fulfilled') {
-      const records = (lightweightRes.value.data || []) as any[]
-      if (records.length > 0) {
-        allEquipments.value = records
-        console.log('[EquipmentStats] 轻量数据加载完成，共', records.length, '条，筛选功能已启用')
-      }
-    } else {
-      console.warn('[EquipmentStats] 轻量数据加载失败，筛选功能不可用')
-    }
-
-    // 统一渲染一次图表，避免闪烁
     renderAllCharts()
   } catch (error) {
     console.error('加载数据失败:', error)
+  }
+}
+
+// ========== 获取后端筛选统计数据 ==========
+const fetchFilteredStats = async () => {
+  try {
+    const params: any = {}
+    if (selectedCountry.value && selectedCountry.value !== 'all') {
+      params.country = selectedCountry.value
+    }
+    if (selectedType.value && selectedType.value !== 'all') {
+      params.type = selectedType.value
+    }
+    if (selectedStatus.value && selectedStatus.value !== 'all') {
+      params.status = selectedStatus.value
+    }
+    
+    const res = await equipmentApi.getFilteredStats(params)
+    
+    if (res.code === 200) {
+      const data = res.data
+      rawData.byType = data.byType || []
+      rawData.byCountry = data.byCountry || []
+      rawData.byYear = data.byYear || []
+      rawData.performance = data.performance || []
+
+      stats.total = data.total || 0
+      stats.types = data.typeCount || 0
+      stats.countries = data.countryCount || 0
+      stats.avgYear = data.avgYear || 0
+
+      animateNumber('total', stats.total)
+      animateNumber('types', stats.types)
+      animateNumber('countries', stats.countries)
+      animateNumber('avgYear', stats.avgYear)
+    }
+  } catch (error) {
+    console.error('获取筛选统计数据失败:', error)
   }
 }
 
@@ -1012,26 +1032,10 @@ const updateStats = (filteredData: any[]) => {
 
 // ========== 渲染所有图表 ==========
 const renderAllCharts = () => {
-  // 如果有全量数据，使用筛选后的数据
-  // 否则直接使用后端返回的聚合数据（cpolar 版本）
-  if (allEquipments.value.length > 0) {
-    const filteredData = getFilteredEquipments()
-    updateStats(filteredData)
-    const byType = aggregateByType(filteredData)
-    const byCountry = aggregateByCountry(filteredData)
-    const byYear = aggregateByYear(filteredData)
-    renderTypeChart(byType)
-    renderCountryChart(byCountry)
-    renderYearChart(byYear)
-    renderRadarChart(filteredData)
-  } else {
-    // 无全量数据时，直接使用后端聚合数据渲染
-    renderTypeChart(rawData.byType)
-    renderCountryChart(rawData.byCountry)
-    renderYearChart(rawData.byYear)
-    // 雷达图使用 performance 数据
-    renderRadarChartFromPerformance(rawData.performance)
-  }
+  renderTypeChart(rawData.byType)
+  renderCountryChart(rawData.byCountry)
+  renderYearChart(rawData.byYear)
+  renderRadarChartFromPerformance(rawData.performance)
 }
 
 // ========== 装备类型分布饼图 ==========
@@ -1904,18 +1908,15 @@ watch([selectedCountry, selectedType, selectedStatus], () => {
     clearTimeout(debounceTimer)
   }
   debounceTimer = setTimeout(() => {
-    renderAllCharts()
+    fetchFilteredStats().then(() => {
+      renderAllCharts()
+    })
   }, 200)
 }, { deep: true })
 
 // 对比模式变化时只重新渲染雷达图，不影响其他图表
 watch(radarCompare, () => {
-  if (allEquipments.value.length > 0) {
-    const filteredData = getFilteredEquipments()
-    renderRadarChart(filteredData)
-  } else {
-    renderRadarChartFromPerformance(rawData.performance)
-  }
+  renderRadarChartFromPerformance(rawData.performance)
 })
 
 // ========== 窗口调整 ==========

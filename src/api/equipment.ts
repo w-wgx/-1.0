@@ -90,6 +90,21 @@ export const equipmentApi = {
   },
 
   /**
+   * 获取带筛选条件的国家装备摘要
+   * 用于全球概览页面的类型/年份筛选联动
+   */
+  getCountriesSummaryFiltered(params: {
+    type?: string
+    minYear?: number
+    maxYear?: number
+  }): Promise<any> {
+    if (USE_MOCK) {
+      return Promise.resolve(mockApi.getCountriesSummaryFiltered(params))
+    }
+    return request.get('/equipment/countries-summary-filtered', { params })
+  },
+
+  /**
    * 获取装备轻量数据（仅筛选和图表所需字段）
    * 用于统计分析页面，替代 getAll，大幅减少传输量
    */
@@ -137,6 +152,24 @@ export const equipmentApi = {
       return Promise.resolve(mockApi.getStats())
     }
     return request.get('/equipment/stats')
+  },
+
+  /**
+   * 获取带筛选条件的统计数据（统计分析页专用）
+   * @param params 筛选参数
+   * @returns 聚合后的统计结果
+   */
+  getFilteredStats(params: {
+    country?: string
+    type?: string
+    status?: string
+    minYear?: number
+    maxYear?: number
+  }): Promise<any> {
+    if (USE_MOCK) {
+      return Promise.resolve(mockApi.getFilteredStats(params))
+    }
+    return request.get('/equipment/stats-filtered', { params })
   },
 
   /**

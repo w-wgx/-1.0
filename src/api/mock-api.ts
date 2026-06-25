@@ -268,6 +268,55 @@ export function mockGetCountriesSummary(): MockResponse {
 }
 
 /**
+ * 模拟获取带筛选条件的国家摘要
+ */
+export function mockGetCountriesSummaryFiltered(params: {
+  type?: string
+  minYear?: number
+  maxYear?: number
+}): MockResponse {
+  let filtered = [...transformedData]
+
+  // 类型筛选
+  if (params.type) {
+    filtered = filtered.filter(item =>
+      item.type?.toLowerCase() === params.type?.toLowerCase()
+    )
+  }
+
+  // 年份范围筛选
+  if (params.minYear !== undefined) {
+    filtered = filtered.filter(item =>
+      (item.year || 0) >= params.minYear!
+    )
+  }
+  if (params.maxYear !== undefined) {
+    filtered = filtered.filter(item =>
+      (item.year || Infinity) <= params.maxYear!
+    )
+  }
+
+  // 按国家聚合
+  const countryCounts: Record<string, number> = {}
+  filtered.forEach(item => {
+    if (item.country) {
+      countryCounts[item.country] = (countryCounts[item.country] || 0) + 1
+    }
+  })
+
+  const summary = Object.entries(countryCounts)
+    .map(([country, count]) => ({ country, count }))
+    .sort((a, b) => b.count - a.count)
+
+  return {
+    code: 200,
+    message: 'success',
+    data: summary,
+    total: summary.length
+  }
+}
+
+/**
  * 模拟获取轻量数据
  */
 export function mockGetLightweight(): MockResponse {
@@ -294,7 +343,17 @@ export function mockGetLightweight(): MockResponse {
  * 修复：返回正确的字段名 topEquipment, byType, byYear
  */
 export function mockGetCountryStats(country: string): MockResponse {
-  const countryData = transformedData.filter(item => item.country === country)
+  const normalizedCountry = normalizeCountryName(country)
+  
+  const countryData = transformedData.filter(item => {
+    const itemCountry = item.country || ''
+    const normalizedItemCountry = normalizeCountryName(itemCountry)
+    
+    return normalizedItemCountry === normalizedCountry ||
+           itemCountry === country ||
+           normalizedItemCountry === country ||
+           itemCountry === normalizedCountry
+  })
 
   // 类型统计 -> byType
   const byType: Record<string, number> = {}
@@ -388,6 +447,80 @@ export function mockGetStats(): MockResponse {
 }
 
 /**
+ * 模拟获取带筛选条件的统计数据
+ */
+export function mockGetFilteredStats(params: {
+  country?: string
+  type?: string
+  status?: string
+  minYear?: number
+  maxYear?: number
+}): MockResponse {
+  let filtered = [...transformedData]
+
+  // 国家筛选
+  if (params.country) {
+    filtered = filtered.filter(item =>
+      item.country?.toLowerCase().includes(params.country!.toLowerCase())
+    )
+  }
+
+  // 类型筛选
+  if (params.type) {
+    filtered = filtered.filter(item =>
+      item.type?.toLowerCase() === params.type!.toLowerCase()
+    )
+  }
+
+  // 状态筛选（Mock 数据中没有 status 字段，暂时忽略）
+  if (params.status) {
+    // 如果数据中有 status 字段，可以在这里添加筛选逻辑
+  }
+
+  // 年份范围筛选
+  if (params.minYear !== undefined) {
+    filtered = filtered.filter(item =>
+      (item.year || 0) >= params.minYear!
+    )
+  }
+  if (params.maxYear !== undefined) {
+    filtered = filtered.filter(item =>
+      (item.year || Infinity) <= params.maxYear!
+    )
+  }
+
+  // 统计筛选后的数据
+  const typeCounts: Record<string, number> = {}
+  const countryCounts: Record<string, number> = {}
+
+  filtered.forEach(item => {
+    const type = item.type || 'Unknown'
+    typeCounts[type] = (typeCounts[type] || 0) + 1
+
+    if (item.country) {
+      countryCounts[item.country] = (countryCounts[item.country] || 0) + 1
+    }
+  })
+
+  return {
+    code: 200,
+    message: 'success',
+    data: {
+      total: filtered.length,
+      typeStats: Object.entries(typeCounts)
+        .map(([type, count]) => ({ type, count }))
+        .sort((a, b) => b.count - a.count),
+      countryStats: Object.entries(countryCounts)
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20),
+      hasImage: filtered.filter(item => item.has_image).length,
+      noImage: filtered.filter(item => !item.has_image).length
+    }
+  }
+}
+
+/**
  * 模拟获取详情
  * 返回转换后的完整数据
  */
@@ -421,8 +554,10 @@ export const mockApi = {
   getAll: mockGetAll,
   getDistinctCountries: mockGetDistinctCountries,
   getCountriesSummary: mockGetCountriesSummary,
+  getCountriesSummaryFiltered: mockGetCountriesSummaryFiltered,
   getLightweight: mockGetLightweight,
   getCountryStats: mockGetCountryStats,
   getStats: mockGetStats,
+  getFilteredStats: mockGetFilteredStats,
   getDetail: mockGetDetail
 }

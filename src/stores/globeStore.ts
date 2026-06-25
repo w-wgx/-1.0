@@ -2,18 +2,18 @@
  * globeStore.ts
  * 全球视图状态管理
  *
- * 数据策略：
- *  - 从后端 /api/equipment/list 获取全量数据（size=30000）
- *  - 从后端 /api/equipment/distinct-countries 获取国家列表（5 分钟内存缓存）
+ * 数据策略（优化后 - 适配 cpolar 低带宽）：
+ *  - 从后端 /api/equipment/countries-summary 获取国家摘要（仅 country + count，轻量）
+ *  - 从后端 /api/equipment/countries-summary-filtered 获取筛选后的国家摘要
  *  - 从 /data/countries.geo.json 动态计算每个国家坐标（替代硬编码 COUNTRY_COORDS）
  *  - 国家数 / 国家列表完全由数据管理页 CSV 导入结果驱动，**不在前端写死任何数字**
- *  - 缓存全量数据，避免重复请求
+ *  - 移除全量装备数据缓存，改用后端聚合接口，大幅减少 cpolar 传输量
  */
 import { defineStore } from 'pinia'
-import { ref, shallowRef, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { eventBus, Events } from '@/utils/EventBus'
 import { equipmentApi } from '@/api/equipment'
-import type { Country, EquipmentStats, Equipment } from '@/types'
+import type { Country, EquipmentStats } from '@/types'
 import { loadCountryCenters, type CountryCenter } from '@/utils/geoDataService'
 
 // 仅保留用于 UI 显示（不写死国家数；缺失时为空）
@@ -97,10 +97,11 @@ export const useGlobeStore = defineStore('globe', () => {
   // 年份范围筛选
   const yearRange = ref<[number, number]>([1940, 2030])
 
-  // 全量装备数据缓存（shallowRef 减少大数据的响应式开销）
-  const allEquipmentCache = shallowRef<Equipment[]>([])
-  let cacheLoaded = false
-  let loadingPromise: Promise<void> | null = null // 防止重复加载
+  // 筛选后的国家装备统计缓存（用于 displayCountries）
+  const filteredCountryStats = ref<Map<string, number>>(new Map())
+
+  // 防止重复加载
+  let loadingPromise: Promise<void> | null = null
 
   // 国家定位表（Map<rawDbName, CountryCenter>），由 geoDataService 提供
   // 不需要响应式：仅在 _doLoadCountries 中填充，在 computed / 方法中只读
@@ -111,26 +112,20 @@ export const useGlobeStore = defineStore('globe', () => {
     countries.value.filter(c => c.equipmentCount > 0)
   )
 
-  const totalCountries = computed(() => countries.value.length)
+  // 真实国家数量（优先使用 API 数据，回退到过滤后的国家列表长度）
+  const _countryCountFromApi = ref(0)
+  const totalCountries = computed(() => _countryCountFromApi.value || countries.value.length)
 
-  // 装备总数（优先使用 API 数据，回退到缓存长度）
+  // 装备总数（使用 API 数据）
   const _totalFromApi = ref(0)
-  const totalEquipment = computed(() => _totalFromApi.value || allEquipmentCache.value.length)
+  const totalEquipment = computed(() => _totalFromApi.value)
 
-  // 按类型统计（优先使用 stats API 数据，回退到全量数据计算）
+  // 按类型统计（使用 stats API 数据）
   const _typeStatsFromApi = ref<Record<string, number>>({})
   const typeStats = computed(() => {
-    // 如果 API 已返回类型统计数据，直接使用
-    if (Object.keys(_typeStatsFromApi.value).length > 0) {
-      return _typeStatsFromApi.value
-    }
-    // 回退：从全量缓存计算
-    const stats: Record<string, number> = {}
-    for (const item of allEquipmentCache.value) {
-      const type = item.type || 'Other'
-      stats[type] = (stats[type] || 0) + 1
-    }
-    return stats
+    return Object.keys(_typeStatsFromApi.value).length > 0 
+      ? _typeStatsFromApi.value 
+      : {}
   })
 
   // 国家坐标映射（code → [lon, lat]），供 GlobeViewer 等组件使用
@@ -151,72 +146,20 @@ export const useGlobeStore = defineStore('globe', () => {
     return map
   })
 
-  // 筛选后的国家列表（按当前类型和年份重新计算装备数量）
+  // 筛选后的国家列表（使用后端聚合数据，不再前端计算）
   const displayCountries = computed(() => {
     if (!activeType.value && yearRange.value[0] === 1940 && yearRange.value[1] === 2030) {
       return countries.value
     }
 
-    const filtered = allEquipmentCache.value.filter(item => {
-      // 类型筛选
-      if (activeType.value && item.type !== activeType.value) return false
-      // 年份筛选
-      if (item.year) {
-        const y = Number(item.year)
-        if (y < yearRange.value[0] || y > yearRange.value[1]) return false
-      }
-      return true
-    })
-
-    // 重新按国家（code）统计
-    const countryMap = new Map<string, number>()
-    filtered.forEach(item => {
-      const center = centersMap.get(item.country || '')
-      if (!center || !center.matched) return
-      countryMap.set(center.code, (countryMap.get(center.code) || 0) + 1)
-    })
-
     return countries.value
       .map(c => ({
         ...c,
-        equipmentCount: countryMap.get(c.code) || 0
+        equipmentCount: filteredCountryStats.value.get(c.code) || 0
       }))
       .filter(c => c.equipmentCount > 0)
       .sort((a, b) => b.equipmentCount - a.equipmentCount)
   })
-
-  // ========== 方法：加载全量装备数据（轻量字段，适合 cpolar 低带宽） ==========
-  async function fetchAllEquipment(): Promise<Equipment[]> {
-    if (cacheLoaded && allEquipmentCache.value.length > 0) {
-      console.log('[globeStore] 使用缓存数据，共', allEquipmentCache.value.length, '条')
-      return allEquipmentCache.value
-    }
-
-    try {
-      console.log('[globeStore] 开始获取装备轻量数据...')
-      const startTime = Date.now()
-
-      const res = await equipmentApi.getLightweight()
-      const records = (res.data || []) as Equipment[]
-      allEquipmentCache.value = records
-      cacheLoaded = true
-      console.log('[globeStore] 轻量数据加载完成，耗时', Date.now() - startTime, 'ms，共', records.length, '条')
-
-      return allEquipmentCache.value
-    } catch (e) {
-      console.warn('[globeStore] 轻量接口失败，回退到 getAll:', e)
-      try {
-        const res = await equipmentApi.getAll(60000)
-        const records = (res.data || []) as Equipment[]
-        allEquipmentCache.value = records
-        cacheLoaded = true
-        return allEquipmentCache.value
-      } catch (e2) {
-        console.error('[globeStore] 回退也失败:', e2)
-        return []
-      }
-    }
-  }
 
   // ========== 方法：加载国家列表 ==========
   async function loadCountries() {
@@ -244,11 +187,10 @@ export const useGlobeStore = defineStore('globe', () => {
       console.log('[globeStore] 开始加载国家摘要数据')
       const startTime = Date.now()
 
-      // 并行获取：国家摘要 + GeoJSON 国家定位 + 全量装备数据（供类型筛选）
+      // 并行获取：国家摘要 + GeoJSON 国家定位（不再加载全量数据）
       const [summaryRes, centers] = await Promise.all([
         equipmentApi.getCountriesSummary(),
-        loadCountryCenters(),
-        fetchAllEquipment()
+        loadCountryCenters()
       ])
       centersMap = centers
 
@@ -376,7 +318,8 @@ export const useGlobeStore = defineStore('globe', () => {
         }
         _typeStatsFromApi.value = statsMap
         _totalFromApi.value = res.data.total || 0
-        console.log('[globeStore] 类型统计加载完成，共', Object.keys(statsMap).length, '种类型，总计', _totalFromApi.value, '条')
+        _countryCountFromApi.value = res.data.countryCount || 0
+        console.log('[globeStore] 类型统计加载完成，共', Object.keys(statsMap).length, '种类型，总计', _totalFromApi.value, '条，', _countryCountFromApi.value, '个国家')
       }
     } catch (e) {
       console.warn('[globeStore] 类型统计加载失败，回退到全量数据计算:', e)
@@ -476,9 +419,13 @@ export const useGlobeStore = defineStore('globe', () => {
   }
 
   // ========== 方法：设置类型筛选 ==========
-  function setActiveType(type: string | null) {
+  async function setActiveType(type: string | null) {
     console.log('[globeStore] 类型筛选:', type || '全部', type ? `共 ${typeStats.value[type] || 0} 条` : '')
     activeType.value = type
+    
+    // 调用后端筛选接口，更新国家装备数量
+    await updateFilteredCountryStats()
+    
     // 如果当前有选中国家，重新计算统计
     if (currentCountry.value) {
       selectCountry(currentCountry.value.code)
@@ -486,11 +433,48 @@ export const useGlobeStore = defineStore('globe', () => {
   }
 
   // ========== 方法：设置年份范围 ==========
-  function setYearRange(range: [number, number]) {
+  async function setYearRange(range: [number, number]) {
     console.log('[globeStore] 年份范围:', range)
     yearRange.value = range
+    
+    // 调用后端筛选接口，更新国家装备数量
+    await updateFilteredCountryStats()
+    
     if (currentCountry.value) {
       selectCountry(currentCountry.value.code)
+    }
+  }
+
+  // ========== 方法：更新筛选后的国家装备统计 ==========
+  async function updateFilteredCountryStats() {
+    if (!activeType.value && yearRange.value[0] === 1940 && yearRange.value[1] === 2030) {
+      filteredCountryStats.value = new Map()
+      return
+    }
+
+    try {
+      console.log('[globeStore] 调用后端筛选接口:', activeType.value, yearRange.value)
+      const res = await equipmentApi.getCountriesSummaryFiltered({
+        type: activeType.value || undefined,
+        minYear: yearRange.value[0],
+        maxYear: yearRange.value[1]
+      })
+
+      if (res.code === 200 && res.data) {
+        const newStats = new Map<string, number>()
+        res.data.forEach((item: any) => {
+          const countryName = item.country || ''
+          const count = item.count || 0
+          const center = centersMap.get(countryName)
+          if (center && center.code) {
+            newStats.set(center.code, (newStats.get(center.code) || 0) + count)
+          }
+        })
+        filteredCountryStats.value = newStats
+        console.log('[globeStore] 筛选统计更新完成，共', newStats.size, '个国家')
+      }
+    } catch (e) {
+      console.error('[globeStore] 更新筛选统计失败:', e)
     }
   }
 
@@ -505,12 +489,12 @@ export const useGlobeStore = defineStore('globe', () => {
 
   // ========== 方法：清除缓存 ==========
   function clearCache() {
-    allEquipmentCache.value = []
-    cacheLoaded = false
     countries.value = []
     loadingPromise = null
     _typeStatsFromApi.value = {}
     _totalFromApi.value = 0
+    _countryCountFromApi.value = 0
+    filteredCountryStats.value = new Map()
     console.log('[globeStore] 缓存已清除')
   }
 
@@ -576,7 +560,6 @@ export const useGlobeStore = defineStore('globe', () => {
     setYearRange,
     resetView,
     clearCache,
-    fetchAllEquipment,
     calculateViewParams
   }
 })
