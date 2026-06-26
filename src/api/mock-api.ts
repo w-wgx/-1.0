@@ -439,6 +439,23 @@ export function mockGetStats(): MockResponse {
 
   const avgYear = yearCount > 0 ? Math.round(totalYear / yearCount) : 0
 
+  const typePerformance: Record<string, { avgLength: number; avgWeight: number; avgSpeed: number; avgCrew: number; avgRange: number }> = {
+    aircraft: { avgLength: 20, avgWeight: 35000, avgSpeed: 1200, avgCrew: 2, avgRange: 3500 },
+    ship: { avgLength: 150, avgWeight: 80000, avgSpeed: 55, avgCrew: 200, avgRange: 8000 },
+    submarine: { avgLength: 70, avgWeight: 6000, avgSpeed: 40, avgCrew: 60, avgRange: 12000 },
+    weapon: { avgLength: 8, avgWeight: 5000, avgSpeed: 2000, avgCrew: 3, avgRange: 500 },
+    facility: { avgLength: 50, avgWeight: 100000, avgSpeed: 0, avgCrew: 50, avgRange: 0 },
+    sensor: { avgLength: 3, avgWeight: 500, avgSpeed: 0, avgCrew: 1, avgRange: 300 },
+    smallarms: { avgLength: 1, avgWeight: 5, avgSpeed: 800, avgCrew: 1, avgRange: 1 },
+    armor: { avgLength: 8, avgWeight: 45000, avgSpeed: 70, avgCrew: 3, avgRange: 500 },
+    Unknown: { avgLength: 10, avgWeight: 10000, avgSpeed: 100, avgCrew: 5, avgRange: 500 }
+  }
+
+  const performance = Object.keys(typeCounts).map(type => ({
+    type,
+    ...typePerformance[type] || typePerformance['Unknown']
+  }))
+
   return {
     code: 200,
     message: 'success',
@@ -457,7 +474,7 @@ export function mockGetStats(): MockResponse {
       byYear: Object.entries(yearCounts)
         .map(([year, count]) => ({ year, count }))
         .sort((a, b) => parseInt(a.year) - parseInt(b.year)),
-      performance: [],
+      performance,
       hasImage: transformedData.filter(item => item.has_image).length,
       noImage: transformedData.filter(item => !item.has_image).length
     }
@@ -531,6 +548,23 @@ export function mockGetFilteredStats(params: {
 
   const avgYear = yearCount > 0 ? Math.round(totalYear / yearCount) : 0
 
+  const typePerformance: Record<string, { avgLength: number; avgWeight: number; avgSpeed: number; avgCrew: number; avgRange: number }> = {
+    aircraft: { avgLength: 20, avgWeight: 35000, avgSpeed: 1200, avgCrew: 2, avgRange: 3500 },
+    ship: { avgLength: 150, avgWeight: 80000, avgSpeed: 55, avgCrew: 200, avgRange: 8000 },
+    submarine: { avgLength: 70, avgWeight: 6000, avgSpeed: 40, avgCrew: 60, avgRange: 12000 },
+    weapon: { avgLength: 8, avgWeight: 5000, avgSpeed: 2000, avgCrew: 3, avgRange: 500 },
+    facility: { avgLength: 50, avgWeight: 100000, avgSpeed: 0, avgCrew: 50, avgRange: 0 },
+    sensor: { avgLength: 3, avgWeight: 500, avgSpeed: 0, avgCrew: 1, avgRange: 300 },
+    smallarms: { avgLength: 1, avgWeight: 5, avgSpeed: 800, avgCrew: 1, avgRange: 1 },
+    armor: { avgLength: 8, avgWeight: 45000, avgSpeed: 70, avgCrew: 3, avgRange: 500 },
+    Unknown: { avgLength: 10, avgWeight: 10000, avgSpeed: 100, avgCrew: 5, avgRange: 500 }
+  }
+
+  const performance = Object.keys(typeCounts).map(type => ({
+    type,
+    ...typePerformance[type] || typePerformance['Unknown']
+  }))
+
   return {
     code: 200,
     message: 'success',
@@ -549,7 +583,7 @@ export function mockGetFilteredStats(params: {
       byYear: Object.entries(yearCounts)
         .map(([year, count]) => ({ year, count }))
         .sort((a, b) => parseInt(a.year) - parseInt(b.year)),
-      performance: [],
+      performance,
       hasImage: filtered.filter(item => item.has_image).length,
       noImage: filtered.filter(item => !item.has_image).length
     }
