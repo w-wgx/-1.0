@@ -65,7 +65,7 @@ export const EQUIPMENT_TYPE_CONFIG: Record<
   sensor: { label: '传感器', color: '#e040fb', icon: '📡' },
   smallarms: { label: '轻武器', color: '#9c27b0', icon: '🔫' },
   armor: { label: '装甲车辆', color: '#ff9800', icon: '🛡' },
-  gelicopter: { label: '直升机', color: '#18ffff', icon: '🚁' },
+  helicopter: { label: '直升机', color: '#18ffff', icon: '🚁' },
   vehicle: { label: '车辆', color: '#69f0ae', icon: '🚗' }
 }
 

@@ -464,7 +464,7 @@ export function mockGetStats(): MockResponse {
     sensor: { avgLength: 3, avgWeight: 500, avgSpeed: 0, avgCrew: 1, avgRange: 300 },
     smallarms: { avgLength: 1, avgWeight: 5, avgSpeed: 800, avgCrew: 1, avgRange: 1 },
     armor: { avgLength: 8, avgWeight: 45000, avgSpeed: 70, avgCrew: 3, avgRange: 500 },
-    gelicopter: { avgLength: 15, avgWeight: 12000, avgSpeed: 250, avgCrew: 3, avgRange: 600 },
+    helicopter: { avgLength: 15, avgWeight: 12000, avgSpeed: 250, avgCrew: 3, avgRange: 600 },
     vehicle: { avgLength: 5, avgWeight: 5000, avgSpeed: 100, avgCrew: 2, avgRange: 300 },
     Unknown: { avgLength: 10, avgWeight: 10000, avgSpeed: 100, avgCrew: 5, avgRange: 500 }
   }
@@ -575,7 +575,7 @@ export function mockGetFilteredStats(params: {
     sensor: { avgLength: 3, avgWeight: 500, avgSpeed: 0, avgCrew: 1, avgRange: 300 },
     smallarms: { avgLength: 1, avgWeight: 5, avgSpeed: 800, avgCrew: 1, avgRange: 1 },
     armor: { avgLength: 8, avgWeight: 45000, avgSpeed: 70, avgCrew: 3, avgRange: 500 },
-    gelicopter: { avgLength: 15, avgWeight: 12000, avgSpeed: 250, avgCrew: 3, avgRange: 600 },
+    helicopter: { avgLength: 15, avgWeight: 12000, avgSpeed: 250, avgCrew: 3, avgRange: 600 },
     vehicle: { avgLength: 5, avgWeight: 5000, avgSpeed: 100, avgCrew: 2, avgRange: 300 },
     Unknown: { avgLength: 10, avgWeight: 10000, avgSpeed: 100, avgCrew: 5, avgRange: 500 }
   }

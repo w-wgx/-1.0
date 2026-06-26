@@ -965,7 +965,7 @@ const getFilteredEquipments = () => {
 // ========== 聚合统计函数 ==========
 // 按类型聚合
 // 统一装备类型排序，确保饼图和雷达图图例顺序一致
-const TYPE_ORDER = ['aircraft', 'ship', 'submarine', 'weapon', 'facility', 'sensor', 'smallarms', 'armor']
+const TYPE_ORDER = ['aircraft', 'ship', 'submarine', 'weapon', 'facility', 'sensor', 'helicopter', 'vehicle']
 
 const aggregateByType = (data: any[]) => {
   const typeCount: Record<string, number> = {}
