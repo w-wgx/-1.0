@@ -92,7 +92,7 @@ function transformItem(item: RawMockEquipment): TransformedEquipment {
     subtype: item.subtype || null,
     // 修复：标准化国家名称（移除年份后缀如 "Russia [1992-]" -> "Russia"）
     country: normalizeCountryName(item.country || ''),
-    year: item.commissioned_year ?? item.year ?? null,
+    year: item.commissioned_year ?? item.year ?? extractYearFromName(item.name) ?? null,
     width: item.width ?? null,
     length: item.length ?? null,
     height: null,
@@ -130,6 +130,22 @@ function extractSubtitle(name: string): string | undefined {
   }
   if (name.includes(' - ')) {
     return name.split(' - ').slice(1).join(' - ').trim()
+  }
+  return undefined
+}
+
+/**
+ * 从名称中提取年份
+ * 名称格式示例: "A-10A Thunderbolt II - 1986"
+ */
+function extractYearFromName(name: string): number | undefined {
+  if (!name) return undefined
+  const yearMatch = name.match(/(19[0-9]{2}|20[0-9]{2})/)
+  if (yearMatch) {
+    const year = parseInt(yearMatch[1])
+    if (year >= 1900 && year <= 2030) {
+      return year
+    }
   }
   return undefined
 }
@@ -448,6 +464,8 @@ export function mockGetStats(): MockResponse {
     sensor: { avgLength: 3, avgWeight: 500, avgSpeed: 0, avgCrew: 1, avgRange: 300 },
     smallarms: { avgLength: 1, avgWeight: 5, avgSpeed: 800, avgCrew: 1, avgRange: 1 },
     armor: { avgLength: 8, avgWeight: 45000, avgSpeed: 70, avgCrew: 3, avgRange: 500 },
+    gelicopter: { avgLength: 15, avgWeight: 12000, avgSpeed: 250, avgCrew: 3, avgRange: 600 },
+    vehicle: { avgLength: 5, avgWeight: 5000, avgSpeed: 100, avgCrew: 2, avgRange: 300 },
     Unknown: { avgLength: 10, avgWeight: 10000, avgSpeed: 100, avgCrew: 5, avgRange: 500 }
   }
 
@@ -557,6 +575,8 @@ export function mockGetFilteredStats(params: {
     sensor: { avgLength: 3, avgWeight: 500, avgSpeed: 0, avgCrew: 1, avgRange: 300 },
     smallarms: { avgLength: 1, avgWeight: 5, avgSpeed: 800, avgCrew: 1, avgRange: 1 },
     armor: { avgLength: 8, avgWeight: 45000, avgSpeed: 70, avgCrew: 3, avgRange: 500 },
+    gelicopter: { avgLength: 15, avgWeight: 12000, avgSpeed: 250, avgCrew: 3, avgRange: 600 },
+    vehicle: { avgLength: 5, avgWeight: 5000, avgSpeed: 100, avgCrew: 2, avgRange: 300 },
     Unknown: { avgLength: 10, avgWeight: 10000, avgSpeed: 100, avgCrew: 5, avgRange: 500 }
   }
 

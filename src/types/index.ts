@@ -64,7 +64,9 @@ export const EQUIPMENT_TYPE_CONFIG: Record<
   weapon: { label: '武器', color: '#ff1744', icon: '🚀' },
   sensor: { label: '传感器', color: '#e040fb', icon: '📡' },
   smallarms: { label: '轻武器', color: '#9c27b0', icon: '🔫' },
-  armor: { label: '装甲车辆', color: '#ff9800', icon: '🛡' }
+  armor: { label: '装甲车辆', color: '#ff9800', icon: '🛡' },
+  gelicopter: { label: '直升机', color: '#18ffff', icon: '🚁' },
+  vehicle: { label: '车辆', color: '#69f0ae', icon: '🚗' }
 }
 
 // 注意：Events 枚举已迁移至 utils/EventBus.ts
