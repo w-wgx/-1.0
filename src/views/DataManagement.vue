@@ -309,8 +309,7 @@
           <label>搜索:</label>
           <input type="text"
                  v-model="searchInput"
-                 placeholder="搜索名称/描述/国家/类型"
-                 @keyup.enter="handleSearch">
+                 placeholder="搜索名称/描述/国家/类型">
         </div>
         <div class="search-item">
           <label>类型:</label>
@@ -1079,10 +1078,12 @@ const handleJumpPage = () => {
   }
   currentPage.value = page
   jumpPageInput.value = null
+  fetchTableData()
 }
 
 const handlePageSizeChange = () => {
   currentPage.value = 1
+  jumpPageInput.value = null
   fetchTableData()
 }
 

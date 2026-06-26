@@ -418,6 +418,9 @@ export function mockGetCountryStats(country: string): MockResponse {
 export function mockGetStats(): MockResponse {
   const typeCounts: Record<string, number> = {}
   const countryCounts: Record<string, number> = {}
+  const yearCounts: Record<string, number> = {}
+  let totalYear = 0
+  let yearCount = 0
 
   transformedData.forEach(item => {
     const type = item.type || 'Unknown'
@@ -426,20 +429,35 @@ export function mockGetStats(): MockResponse {
     if (item.country) {
       countryCounts[item.country] = (countryCounts[item.country] || 0) + 1
     }
+
+    if (item.year && item.year > 0) {
+      yearCounts[String(item.year)] = (yearCounts[String(item.year)] || 0) + 1
+      totalYear += Number(item.year)
+      yearCount++
+    }
   })
+
+  const avgYear = yearCount > 0 ? Math.round(totalYear / yearCount) : 0
 
   return {
     code: 200,
     message: 'success',
     data: {
       total: transformedData.length,
-      typeStats: Object.entries(typeCounts)
+      typeCount: Object.keys(typeCounts).length,
+      countryCount: Object.keys(countryCounts).length,
+      avgYear,
+      byType: Object.entries(typeCounts)
         .map(([type, count]) => ({ type, count }))
         .sort((a, b) => b.count - a.count),
-      countryStats: Object.entries(countryCounts)
+      byCountry: Object.entries(countryCounts)
         .map(([country, count]) => ({ country, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 20),
+      byYear: Object.entries(yearCounts)
+        .map(([year, count]) => ({ year, count }))
+        .sort((a, b) => parseInt(a.year) - parseInt(b.year)),
+      performance: [],
       hasImage: transformedData.filter(item => item.has_image).length,
       noImage: transformedData.filter(item => !item.has_image).length
     }
@@ -492,6 +510,9 @@ export function mockGetFilteredStats(params: {
   // 统计筛选后的数据
   const typeCounts: Record<string, number> = {}
   const countryCounts: Record<string, number> = {}
+  const yearCounts: Record<string, number> = {}
+  let totalYear = 0
+  let yearCount = 0
 
   filtered.forEach(item => {
     const type = item.type || 'Unknown'
@@ -500,20 +521,35 @@ export function mockGetFilteredStats(params: {
     if (item.country) {
       countryCounts[item.country] = (countryCounts[item.country] || 0) + 1
     }
+
+    if (item.year && item.year > 0) {
+      yearCounts[String(item.year)] = (yearCounts[String(item.year)] || 0) + 1
+      totalYear += Number(item.year)
+      yearCount++
+    }
   })
+
+  const avgYear = yearCount > 0 ? Math.round(totalYear / yearCount) : 0
 
   return {
     code: 200,
     message: 'success',
     data: {
       total: filtered.length,
-      typeStats: Object.entries(typeCounts)
+      typeCount: Object.keys(typeCounts).length,
+      countryCount: Object.keys(countryCounts).length,
+      avgYear,
+      byType: Object.entries(typeCounts)
         .map(([type, count]) => ({ type, count }))
         .sort((a, b) => b.count - a.count),
-      countryStats: Object.entries(countryCounts)
+      byCountry: Object.entries(countryCounts)
         .map(([country, count]) => ({ country, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 20),
+      byYear: Object.entries(yearCounts)
+        .map(([year, count]) => ({ year, count }))
+        .sort((a, b) => parseInt(a.year) - parseInt(b.year)),
+      performance: [],
       hasImage: filtered.filter(item => item.has_image).length,
       noImage: filtered.filter(item => !item.has_image).length
     }
